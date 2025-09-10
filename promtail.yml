@@ -1,0 +1,74 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+- job_name: arh1-isu-pgpro1-1c
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: arh1-isu-pgpro1-1c
+      host: arh1-isu-pgpro1
+      agent: promtail
+      __path__: /var/log/pgpro/pgpro-isu-1c-*.json
+
+  pipeline_stages:
+    - json:
+        expressions:
+          severity: error_severity
+          user: user
+          database: dbname
+          message: message
+    - template:
+        source: severity
+        template: '{{ regexReplaceAllLiteral "DEBUG.*" .severity "debug" }}'
+    - template:
+        source: severity
+        template: '{{ regexReplaceAllLiteral "INFO|NOTICE|LOG" .severity "info" }}'
+    - template:
+        source: severity
+        template: '{{ ToLower .severity }}'
+    - labels:
+        level: severity
+        user: user
+        database: database
+        message: message
+
+- job_name: arh1-isu-pgpro1-services
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: arh1-isu-pgpro1-services
+      host: arh1-isu-pgpro1
+      agent: promtail
+      __path__: /var/log/pgpro/pgpro-isu-services-*.json
+
+  pipeline_stages:
+    - json:
+        expressions:
+          severity: error_severity
+          user: user
+          database: dbname
+          message: message
+    - template:
+        source: severity
+        template: '{{ regexReplaceAllLiteral "DEBUG.*" .severity "debug" }}'
+    - template:
+        source: severity
+        template: '{{ regexReplaceAllLiteral "INFO|NOTICE|LOG" .severity "info" }}'
+    - template:
+        source: severity
+        template: '{{ ToLower .severity }}'
+    - labels:
+        level: severity
+        user: user
+        database: database
+        message: message
